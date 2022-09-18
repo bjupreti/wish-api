@@ -1,56 +1,15 @@
-from fastapi import FastAPI, Response, status, HTTPException, Depends
-from random import randrange
-from sqlalchemy.orm import Session
-from .models.post import Post as PostModel
-from .schemas.post import PostCreate, PostResponse, PostUpdate
-from .database import engine, get_db, Base
+from fastapi import FastAPI
+from .database import engine, Base
+
+from .routers import post, user
 
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
+app.include_router(post.router)
+app.include_router(user.router)
+
 @app.get("/")
-async def root():
-    return {"message": "Hello world"}
-
-@app.get("/posts", response_model=list[PostResponse])
-def get_posts(db: Session = Depends(get_db)):
-    posts = db.query(PostModel).all()
-    return posts
-
-
-@app.post("/posts", status_code=status.HTTP_201_CREATED, response_model=PostResponse)
-def create_posts(post: PostCreate, db: Session = Depends(get_db)):
-    new_post = PostModel(**post.dict())
-    db.add(new_post)
-    db.commit()
-    db.refresh(new_post)
-    return new_post
-
-
-@app.get("/posts/{id}", response_model=PostResponse)
-def get_post(id: int, db: Session = Depends(get_db)):
-    post = db.query(PostModel).filter_by(id=str(id)).first()
-    if not post:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id: {id} doesn't exist.")
-    return post
-
-@app.delete("/posts/{id}")
-def delete_post(id: int, db: Session = Depends(get_db)):
-    post_query = db.query(PostModel).filter_by(id=str(id))
-    if post_query.first() is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id: {id} doesn't exist.")
-    else:
-        post_query.delete(synchronize_session=False)
-        db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-@app.put("/posts/{id}")
-def update_post(id: int, post: PostUpdate, db: Session = Depends(get_db)):
-    post_query = db.query(PostModel).filter_by(id=str(id))
-    if post_query.first() is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id: {id} doesn't exist.")
-    else:
-        post_query.update(post.dict(), synchronize_session=False)
-        db.commit()
-    return post_query.first()
+def root():
+    return {"message": "Hello world!!"}
