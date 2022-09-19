@@ -3,7 +3,8 @@ from .database import engine, Base
 
 from .routers import post, user, auth
 
-Base.metadata.create_all(bind=engine)
+# Alembic takes care of creating the tables, so it's not needed.
+# Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
