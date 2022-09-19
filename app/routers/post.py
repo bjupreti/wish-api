@@ -19,7 +19,7 @@ def get_posts(db: Session = Depends(get_db)):
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=PostResponse)
-def create_posts(post: PostCreate, db: Session = Depends(get_db), current_user_id: int = Depends(get_current_user)):
+def create_posts(post: PostCreate, db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
     new_post = PostModel(**post.dict())
     db.add(new_post)
     db.commit()
@@ -35,7 +35,7 @@ def get_post(id: int, db: Session = Depends(get_db)):
     return post
 
 @router.delete("/{id}")
-def delete_post(id: int, db: Session = Depends(get_db), current_user_id: int = Depends(get_current_user)):
+def delete_post(id: int, db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
     post_query = db.query(PostModel).filter_by(id=str(id))
     if post_query.first() is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id: {id} doesn't exist.")
@@ -45,7 +45,7 @@ def delete_post(id: int, db: Session = Depends(get_db), current_user_id: int = D
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 @router.put("/{id}", response_model=PostResponse)
-def update_post(id: int, post: PostUpdate, db: Session = Depends(get_db), current_user_id: int = Depends(get_current_user)):
+def update_post(id: int, post: PostUpdate, db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
     post_query = db.query(PostModel).filter_by(id=str(id))
     if post_query.first() is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id: {id} doesn't exist.")
