@@ -1,0 +1,33 @@
+version: "3"
+services: 
+  api: 
+    image: bjupreti/wish
+    depends_on:
+      - postgres
+    ports:
+      - 80:8000
+    # env_file:
+    #   - ./.env
+    environment:
+      - db_hostname=${db_hostname}
+      - db_port=${db_port}
+      - db_password=${db_password}
+      - db_name=${db_name}
+      - db_username=${db_username}
+
+      - secret_key=${secret_key}
+      - algorithm=${algorithm}
+      - access_token_expire_mintues=${access_token_expire_mintues}
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+  
+  postgres:
+    image: postgres
+    environment:
+      - POSTGRES_PASSWORD=${db_password}
+      - POSTGRES_DB=${db_name}
+
+    volumes:
+      - postgres-db:/var/lib/postgresql/data
+
+volumes:
+  postgres-db:

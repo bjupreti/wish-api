@@ -1,0 +1,35 @@
+version: "3"
+services: 
+  api: 
+    build: .
+    depends_on:
+      - postgres
+    ports:
+      - 8000:8000
+    # env_file:
+    #   - ./.env
+    environment:
+      - db_hostname=postgres
+      - db_port=5432
+      - db_password=postgres
+      - db_name=wish
+      - db_username=postgres
+
+      - secret_key=b95745a244dcb59609e4006ce1d6e45b2934f13539ae4dc49913ea34187e531a
+      - algorithm=HS256
+      - access_token_expire_mintues=30
+    volumes:
+      - ./:/usr/src/app:ro
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+  
+  postgres:
+    image: postgres
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=wish
+
+    volumes:
+      - postgres-db:/var/lib/postgresql/data
+
+volumes:
+  postgres-db:
