@@ -59,7 +59,7 @@ heroku apps:info wishtracker
 
 To run a command in our heroku instance
 ```
-heroku run "alembic upgrade head"
+heroku run "alembic upgrade head" // to run migration
 ```
 
 To run bash shell
