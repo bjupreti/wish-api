@@ -19,9 +19,9 @@ class TransactionUpdate(TransactionBase):
 
 class TransactionResponse(TransactionBase):
     id: int
+    user_id: int
     is_expense: bool
     created_at: datetime
-    user: UserResponse
 
     class Config:
         orm_mode = True
