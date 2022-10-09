@@ -26,7 +26,7 @@ def get_transactions(db: Session = Depends(get_db), current_user: dict = Depends
     offset = (page - 1) * limit
     # TODO: Make search case-insensitive
     # TODO: Add order_by
-    transactions = db.query(TransactionModel).filter(TransactionModel.user_id == current_user.id).filter(TransactionModel.title.contains(search)).limit(limit).offset(offset).all()
+    transactions = db.query(TransactionModel).filter(TransactionModel.user_id == current_user.id).filter(TransactionModel.title.contains(search)).order_by(TransactionModel.created_at.desc()).limit(limit).offset(offset).all()
     return transactions
 
 @router.get("/{id}", response_model=TransactionResponse)
