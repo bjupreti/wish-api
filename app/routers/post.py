@@ -13,7 +13,7 @@ router = APIRouter(
 )
 
 @router.get("/", response_model=list[PostResponse])
-def get_posts(db: Session = Depends(get_db), current_user: dict = Depends(get_current_user), limit: int = 10, page: int = 1, search: str | None = None):
+def get_posts(db: Session = Depends(get_db), current_user: dict = Depends(get_current_user), limit: int = 10, page: int = 1, search: str | None = ""):
     offset = (page - 1) * limit
     posts = db.query(PostModel).filter(PostModel.user_id == current_user.id).filter(PostModel.title.contains(search)).limit(limit).offset(offset). all()
     return posts
