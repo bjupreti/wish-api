@@ -22,6 +22,10 @@ class TransactionResponse(TransactionBase):
     user_id: int
     is_expense: bool
     created_at: datetime
+    transaction_pic_url: str
 
     class Config:
         orm_mode = True
+
+class UploadPhotoResponse(BaseModel):
+    detail: str

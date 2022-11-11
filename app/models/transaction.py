@@ -13,14 +13,11 @@ class Transaction(Base):
     # category = Column(Enum)
     category = Column(String(32), nullable=False)
     is_archived = Column(Boolean, nullable=False, server_default="False")
-    # image_url
-    # image_compressed_url
     is_income = Column(Boolean, nullable=False, server_default="False")
     is_expense = Column(Boolean, nullable=False, server_default="False")
     is_recurring = Column(Boolean, nullable=False, server_default="False")
-
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
-    # updated_at = 
+    transaction_pic_url = Column(String(512), nullable=True, server_default="")
+    
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-
     user = relationship("User")

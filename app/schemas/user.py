@@ -26,6 +26,7 @@ class UserResponse(BaseModel):
     total_expense: float
     currency: str
     language: str
+    profile_pic_url: str
 
 
     class Config:
@@ -37,4 +38,6 @@ class LoginToken(BaseModel):
 
 class TokenData(BaseModel):
     id: str | None
-    
+
+class UploadPhotoResponse(BaseModel):
+    detail: str

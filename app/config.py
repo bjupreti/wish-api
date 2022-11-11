@@ -11,6 +11,11 @@ class Settings(BaseSettings):
     secret_key: str
     algorithm: str
     access_token_expire_mintues: int
+    # AWS
+    bucket_name: str
+    region: str
+    aws_access_key_id: str
+    aws_secret_access_key: str
 
     class Config:
         env_file = ".env"

@@ -18,6 +18,8 @@ class User(Base):
     currency = Column(String(3), nullable=False, server_default="USD")
     language = Column(String(2), nullable=False, server_default="en")
 
+    profile_pic_url = Column(String(512), nullable=True, server_default="")
+
     def __repr__(self):
         return f'User(id={self.id}, full_name={self.full_name}, email={self.email})'
     

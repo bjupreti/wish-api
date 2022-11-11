@@ -1,11 +1,13 @@
-from fastapi import Response, status, HTTPException, Depends, APIRouter
+from fastapi import Response, status, HTTPException, Depends, APIRouter, UploadFile
 from sqlalchemy.orm import Session
 
 from ..oauth2 import get_current_user
 from ..models.transaction import Transaction as TransactionModel
 from ..models.user import User as UserModel
-from ..schemas.transaction import TransactionCreate, TransactionResponse, TransactionUpdate
+from ..schemas.transaction import TransactionCreate, TransactionResponse, TransactionUpdate, UploadPhotoResponse
 from ..database import get_db
+from ..common.s3 import upload_file_in_s3, create_presigned_url
+
 
 router = APIRouter(
     prefix="/transactions",
@@ -40,6 +42,11 @@ def get_transactions(db: Session = Depends(get_db), current_user: dict = Depends
     # TODO: Make search case-insensitive
     # TODO: Add order_by
     transactions = db.query(TransactionModel).filter(TransactionModel.user_id == current_user.id).filter(TransactionModel.title.contains(search)).order_by(TransactionModel.created_at.desc()).limit(limit).offset(offset).all()
+
+    for item in transactions:
+         # creating preassigned url and sending it as profile_pic_url
+        if item.transaction_pic_url:
+            item.transaction_pic_url = create_presigned_url(item.transaction_pic_url)
     return transactions
 
 @router.get("/{id}", response_model=TransactionResponse)
@@ -50,6 +57,10 @@ def get_transaction(id: int, db: Session = Depends(get_db), current_user: dict =
 
     if transaction.user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not Authorized to perform requested action")
+
+    # creating preassigned url and sending it as profile_pic_url
+    if transaction.transaction_pic_url:
+        transaction.transaction_pic_url = create_presigned_url(transaction.transaction_pic_url)
 
     return transaction
 
@@ -114,3 +125,27 @@ def update_transaction(id: int, updated_transaction: TransactionUpdate, db: Sess
 
     return transaction_query.first()
 
+
+@router.post("/upload-file", response_model=UploadPhotoResponse)
+async def upload_file(file: UploadFile, transaction_id: int, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    # TODO: Check the file size - HTTP_413 = 'Request Entity Too Large'
+    # Upload Files
+    type = file.content_type
+    transaction_id = str(transaction_id)
+    key = f"transaction_pic_url/{str(current_user.id)}/{transaction_id}.{file.filename}"
+    if (type != "image/jpeg" and type != "image/png" and type != "image/svg+xml"):
+            raise HTTPException(status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, detail=f"Please upload jpeg/png images!")
+    try:
+        await upload_file_in_s3(key, file)
+    except:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="File upload unsuccessful! Please try again later.")
+
+    # Update file URL
+    transaction_query = db.query(TransactionModel).filter_by(id=str(transaction_id))
+    transaction = transaction_query.first()
+
+    setattr(transaction, "transaction_pic_url", key)
+
+    db.commit()
+    
+    return {"detail": f"{file.filename} Upload Successful"}

@@ -1,11 +1,12 @@
-from fastapi import status, HTTPException, Depends, APIRouter
+from fastapi import status, HTTPException, Depends, APIRouter, UploadFile
 from sqlalchemy.orm import Session
 
 from ..models.user import User as UserModel
-from ..schemas.user import UserCreate, UserUpdate, UserResponse
+from ..schemas.user import UserCreate, UserUpdate, UserResponse, UploadPhotoResponse
 from ..database import get_db
 from ..oauth2 import get_current_user
 from .. import utils
+from ..common.s3 import upload_file_in_s3, create_presigned_url
 
 router = APIRouter(
     prefix="/users",
@@ -61,4 +62,32 @@ def get_user(id: int, db: Session = Depends(get_db)):
     user = db.query(UserModel).filter_by(id=str(id)).first()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"user with id: {id} doesn't exist.")
+    
+    # creating preassigned url and sending it as profile_pic_url
+    if user.profile_pic_url:
+        user.profile_pic_url = create_presigned_url(user.profile_pic_url)
     return user
+
+
+@router.post("/upload-file", response_model=UploadPhotoResponse)
+async def upload_file(file: UploadFile, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    # TODO: Check the file size - HTTP_413 = 'Request Entity Too Large'
+    # Upload Files
+    type = file.content_type
+    key = f"profile_pic_url/{str(current_user.id)}/{file.filename}"
+    if (type != "image/jpeg" and type != "image/png" and type != "image/svg+xml"):
+            raise HTTPException(status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, detail=f"Please upload jpeg/png images!")
+    try:
+        await upload_file_in_s3(key, file)
+    except:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="File upload unsuccessful! Please try again later.")
+
+    # Update file URL
+    user_query = db.query(UserModel).filter_by(id=str(current_user.id))
+    user = user_query.first()
+
+    setattr(user, "profile_pic_url", key)
+
+    db.commit()
+    
+    return {"detail": f"{file.filename} Upload Successful"}
