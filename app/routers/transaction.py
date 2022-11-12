@@ -1,5 +1,8 @@
 from fastapi import Response, status, HTTPException, Depends, APIRouter, UploadFile
 from sqlalchemy.orm import Session
+from sqlalchemy import func
+from fastapi_pagination import Page, Params
+from fastapi_pagination.ext.sqlalchemy import paginate
 
 from ..oauth2 import get_current_user
 from ..models.transaction import Transaction as TransactionModel
@@ -36,15 +39,13 @@ def create_transaction(transaction: TransactionCreate, db: Session = Depends(get
     db.refresh(new_transaction)
     return new_transaction
 
-@router.get("/", response_model=list[TransactionResponse])
-def get_transactions(db: Session = Depends(get_db), current_user: dict = Depends(get_current_user), limit: int = 10, page: int = 1, search: str | None = ""):
-    offset = (page - 1) * limit
-    # TODO: Make search case-insensitive
-    # TODO: Add order_by
-    transactions = db.query(TransactionModel).filter(TransactionModel.user_id == current_user.id).filter(TransactionModel.title.contains(search)).order_by(TransactionModel.created_at.desc()).limit(limit).offset(offset).all()
+@router.get("/", response_model=Page[TransactionResponse])
+def get_transactions(db: Session = Depends(get_db), current_user: dict = Depends(get_current_user), search: str | None = "", params: Params = Depends()):
+    transactions = paginate(db.query(TransactionModel).filter(func.lower(TransactionModel.title).contains(search.lower())).order_by(TransactionModel.created_at.desc()), params)
 
-    for item in transactions:
-         # creating preassigned url and sending it as profile_pic_url
+    # creating preassigned url and sending it as profile_pic_url
+    for item in transactions.items:
+        print(item)
         if item.transaction_pic_url:
             item.transaction_pic_url = create_presigned_url(item.transaction_pic_url)
     return transactions
